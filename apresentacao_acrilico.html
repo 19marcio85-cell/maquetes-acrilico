@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estúdio 3D | Maquetes Comerciais</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Google Sans', Arial, sans-serif; background-color: #f4f6f8; margin: 0; padding: 20px; color: #333; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
+        .header { margin-bottom: 20px; }
+        .header h1 { margin: 0; color: #1e8e3e; font-size: 24px; display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #eee; padding-bottom: 10px;}
+        
+        .container { display: flex; gap: 20px; flex: 1; min-height: 0; }
+        
+        /* Painel Lateral */
+        .painel { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); width: 400px; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
+        
+        .section-title { font-size: 11px; text-transform: uppercase; color: #777; font-weight: bold; letter-spacing: 0.5px; margin: 20px 0 10px 0; display: block; }
+        .section-title:first-child { margin-top: 0; }
+
+        textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 13px; resize: none; background-color: #fafafa; transition: border 0.2s;}
+        textarea:focus { outline: none; border-color: #1e8e3e; background-color: #fff; }
+
+        .row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .row > div { flex: 1; min-width: 0; /* Previne que os inputs "rebentem" o layout */ }
+        label { font-size: 13px; color: #555; display: block; margin-bottom: 6px; }
+        
+        input[type="number"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; transition: border 0.2s; }
+        input[type="number"]:focus, select:focus { outline: none; border-color: #1e8e3e; }
+
+        #opcoesExtra { background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px dashed #ccc; margin-bottom: 15px; display: none; }
+
+        .btn-exportar { background: #1e8e3e; color: white; border: none; padding: 15px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: auto; text-align: center; }
+        .btn-exportar:hover { background: #188038; }
+
+        /* Área 3D */
+        .area-3d { flex: 1; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); position: relative; overflow: hidden; display: flex; flex-direction: column;}
+        #canvas3d { width: 100%; height: 100%; display: block; cursor: grab; }
+        #canvas3d:active { cursor: grabbing; }
+        
+        .overlay-info { position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.9); padding: 10px 15px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); pointer-events: none; border-left: 4px solid #1e8e3e; }
+        .overlay-info h3 { margin: 0 0 5px 0; font-size: 16px; color: #333; }
+        .overlay-info p { margin: 0; font-size: 13px; color: #666; font-weight: 500; }
+
+        #avisoPDF { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 30px; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-weight: bold;}
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Estúdio 3D | Maquete Comercial</h1>
+</div>
+
+<div class="container">
+    <div class="painel">
+        <span class="section-title">Texto do Cliente (Copy-Paste)</span>
+        <textarea placeholder="Cola aqui as notas, emails ou mensagens do cliente..."></textarea>
+
+        <span class="section-title">Categoria de Produto</span>
+        <select id="tipoProduto" style="margin-bottom: 20px;" onchange="atualizarInterface()">
+            <option value="urna">Urna / Caixa (Fundo Aberto)</option>
+            <option value="expositor">Expositor com Degraus</option>
+            <option value="tabuleiro">Tabuleiro Simples</option>
+            <option value="regua">Régua Porta Preços (Perfil L)</option>
+            <option value="podium">Podium Cilíndrico</option>
+        </select>
+
+        <span class="section-title">Dimensões Finais (mm)</span>
+        <div class="row">
+            <div>
+                <label>Largura (X)</label>
+                <input type="number" id="dimX" value="300" oninput="gerar3D()">
+            </div>
+            <div>
+                <label>Altura (Z)</label>
+                <input type="number" id="dimZ" value="200" oninput="gerar3D()">
+            </div>
+            <div>
+                <label>Prof. (Y)</label>
+                <input type="number" id="dimY" value="200" oninput="gerar3D()">
+            </div>
+        </div>
+        
+        <div class="row">
+            <div>
+                <label>Espessura do Acrílico</label>
+                <input type="number" id="esp" value="5" step="any" oninput="gerar3D()">
+            </div>
+        </div>
+
+        <div id="opcoesExtra">
+            <div id="divDegraus" style="display:none;">
+                <label>Número de Degraus</label>
+                <input type="number" id="numDegraus" value="3" min="1" max="10" oninput="gerar3D()">
+            </div>
+            <div id="divAngulo" style="display:none;">
+                <label>Ângulo da Régua (º)</label>
+                <input type="number" id="anguloL" value="75" min="45" max="90" oninput="gerar3D()">
+            </div>
+        </div>
+
+        <button type="button" class="btn-exportar" onclick="simularExportacao()">📄 EXPORTAR PDF PARA O CLIENTE</button>
+    </div>
+
+    <div class="area-3d">
+        <div class="overlay-info">
+            <h3 id="infoTitulo">Urna / Caixa</h3>
+            <p id="infoMedidas">300x200x200 mm | Esp: 5mm</p>
+        </div>
+        <canvas id="canvas3d"></canvas>
+        <div id="avisoPDF">A geração de PDF ficará ativa na versão Web (Vercel)!</div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+<script>
+let scene, camera, renderer, controls;
+let acrilicoMaterial, arestaMaterial;
+
+window.onload = function() {
+    iniciarMotor3D();
+    atualizarInterface(); 
+};
+
+function atualizarInterface() {
+    const tipo = document.getElementById('tipoProduto').value;
+    const caixaExtra = document.getElementById('opcoesExtra');
+    const divDegraus = document.getElementById('divDegraus');
+    const divAngulo = document.getElementById('divAngulo');
+
+    caixaExtra.style.display = 'none';
+    divDegraus.style.display = 'none';
+    divAngulo.style.display = 'none';
+
+    if(tipo === 'expositor') {
+        caixaExtra.style.display = 'block';
+        divDegraus.style.display = 'block';
+    } else if(tipo === 'regua') {
+        caixaExtra.style.display = 'block';
+        divAngulo.style.display = 'block';
+    }
+
+    const selectEl = document.getElementById('tipoProduto');
+    document.getElementById('infoTitulo').innerText = selectEl.options[selectEl.selectedIndex].text;
+
+    gerar3D();
+}
+
+function iniciarMotor3D() {
+    if(typeof THREE === 'undefined') {
+        alert("Erro: O teu navegador bloqueou o motor 3D. Precisamos alojar isto online!");
+        return;
+    }
+
+    const canvas = document.getElementById('canvas3d');
+    const container = canvas.parentElement;
+    
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf4f6f8); 
+    
+    camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 5000);
+    
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio); 
+    
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    
+    // Iluminação
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const light1 = new THREE.DirectionalLight(0xffffff, 0.5); light1.position.set(500, 1000, 800); scene.add(light1);
+    const light2 = new THREE.DirectionalLight(0xffffff, 0.3); light2.position.set(-500, 500, -800); scene.add(light2);
+    const light3 = new THREE.PointLight(0xffffff, 0.4); light3.position.set(0, -500, 0); scene.add(light3);
+
+    // Material Acrílico Realista
+    acrilicoMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0xe0f7fa, 
+        transparent: true, 
+        opacity: 0.65, 
+        shininess: 120, 
+        side: THREE.DoubleSide,
+        reflectivity: 1
+    });
+
+    arestaMaterial = new THREE.LineBasicMaterial({ 
+        color: 0x00bcd4, 
+        linewidth: 1, 
+        transparent: true, 
+        opacity: 0.4 
+    });
+
+    window.addEventListener('resize', onWindowResize, false);
+    
+    function animar() {
+        requestAnimationFrame(animar);
+        controls.update();
+        renderer.render(scene, camera);
+    }
+    animar();
+}
+
+function onWindowResize() {
+    if(!renderer) return;
+    const container = renderer.domElement.parentElement;
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+}
+
+function criarPainel(w, h, d, x, y, z) {
+    const geo = new THREE.BoxGeometry(w, h, d);
+    const mesh = new THREE.Mesh(geo, acrilicoMaterial);
+    mesh.position.set(x, y, z);
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), arestaMaterial);
+    mesh.add(edges);
+    scene.add(mesh);
+}
+
+function gerar3D() {
+    if(!scene) return;
+
+    // Limpar modelos antigos
+    const objRemover = [];
+    scene.children.forEach(child => { if (child.type === 'Mesh') objRemover.push(child); });
+    objRemover.forEach(obj => scene.remove(obj));
+
+    const X = parseFloat(document.getElementById('dimX').value) || 100;
+    const Z = parseFloat(document.getElementById('dimZ').value) || 100;
+    const Y = parseFloat(document.getElementById('dimY').value) || 100;
+    const T = parseFloat(document.getElementById('esp').value) || 3;
+    const tipo = document.getElementById('tipoProduto').value;
+
+    document.getElementById('infoMedidas').innerText = `L: ${X} | A: ${Z} | P: ${Y} mm (Esp: ${T}mm)`;
+
+    if (tipo === 'urna') {
+        criarPainel(X, T, Y, 0, Z - T/2, 0); // Topo
+        criarPainel(X, Z-T, T, 0, (Z-T)/2, Y/2 - T/2); // Frente
+        criarPainel(X, Z-T, T, 0, (Z-T)/2, -Y/2 + T/2); // Trás
+        criarPainel(T, Z-T, Y-2*T, -X/2 + T/2, (Z-T)/2, 0); // Esq
+        criarPainel(T, Z-T, Y-2*T, X/2 - T/2, (Z-T)/2, 0); // Dir
+
+    } else if (tipo === 'tabuleiro') {
+        let alturaAba = Math.max(30, Y * 0.15); 
+        criarPainel(X, T, Y, 0, T/2, 0); 
+        criarPainel(X, alturaAba, T, 0, alturaAba/2 + T, Y/2 - T/2); 
+        criarPainel(X, alturaAba, T, 0, alturaAba/2 + T, -Y/2 + T/2); 
+        criarPainel(T, alturaAba, Y-2*T, -X/2 + T/2, alturaAba/2 + T, 0); 
+        criarPainel(T, alturaAba, Y-2*T, X/2 - T/2, alturaAba/2 + T, 0); 
+
+    } else if (tipo === 'expositor') {
+        const degraus = parseInt(document.getElementById('numDegraus').value) || 3;
+        const compDegrau = Y / degraus;
+        const altDegrau = Z / degraus;
+
+        for(let i=0; i<degraus; i++) {
+            let posX = 0;
+            let posY = (i+1) * altDegrau - T/2;
+            let posZ = (Y/2) - (i * compDegrau) - (compDegrau/2);
+            criarPainel(X, T, compDegrau, posX, posY, posZ);
+
+            let espY = altDegrau - T;
+            let pY = (i * altDegrau) + (espY/2) + T;
+            let pZ = (Y/2) - (i * compDegrau) - compDegrau + T/2;
+            if(i===0) { espY = altDegrau; pY = altDegrau/2; pZ = (Y/2) - compDegrau + T/2; }
+            if(i < degraus) criarPainel(X, espY, T, 0, pY, pZ);
+        }
+
+        const shape = new THREE.Shape();
+        shape.moveTo(0, 0);
+        shape.lineTo(Y, 0);
+        for(let i=0; i<degraus; i++) {
+            shape.lineTo(Y - (i*compDegrau), (i+1)*altDegrau);
+            shape.lineTo(Y - ((i+1)*compDegrau), (i+1)*altDegrau);
+        }
+        shape.lineTo(0, 0); 
+        
+        const geoEsq = new THREE.ExtrudeGeometry(shape, { depth: T, bevelEnabled: false });
+        geoEsq.translate(-Y/2, 0, -T/2); 
+        geoEsq.rotateY(-Math.PI / 2); 
+        
+        const meshEsq = new THREE.Mesh(geoEsq, acrilicoMaterial);
+        meshEsq.position.set(-X/2 + T/2, 0, 0);
+        meshEsq.add(new THREE.LineSegments(new THREE.EdgesGeometry(geoEsq), arestaMaterial));
+        scene.add(meshEsq);
+
+        const meshDir = new THREE.Mesh(geoEsq, acrilicoMaterial);
+        meshDir.position.set(X/2 - T/2, 0, 0);
+        meshDir.add(new THREE.LineSegments(new THREE.EdgesGeometry(geoEsq), arestaMaterial));
+        scene.add(meshDir);
+
+    } else if (tipo === 'podium') {
+        const raio = X / 2;
+        const geoCilindro = new THREE.CylinderGeometry(raio, raio, Z, 64);
+        const meshCilindro = new THREE.Mesh(geoCilindro, acrilicoMaterial);
+        meshCilindro.position.set(0, Z/2, 0);
+        meshCilindro.add(new THREE.LineSegments(new THREE.EdgesGeometry(geoCilindro), arestaMaterial));
+        scene.add(meshCilindro);
+
+    } else if (tipo === 'regua') {
+        let anguloRad = THREE.MathUtils.degToRad(parseFloat(document.getElementById('anguloL').value) || 75);
+        criarPainel(X, T, Y, 0, T/2, 0);
+        
+        const geoCostas = new THREE.BoxGeometry(X, Z, T);
+        const meshCostas = new THREE.Mesh(geoCostas, acrilicoMaterial);
+        geoCostas.translate(0, Z/2, 0); 
+        meshCostas.rotation.x = -(Math.PI/2 - anguloRad); 
+        meshCostas.position.set(0, T, -Y/2 + T/2); 
+        meshCostas.add(new THREE.LineSegments(new THREE.EdgesGeometry(geoCostas), arestaMaterial));
+        scene.add(meshCostas);
+    }
+
+    const maxD = Math.max(X, Y, Z);
+    camera.position.set(maxD * 0.9, maxD * 0.9, maxD * 1.3);
+    camera.lookAt(0, Z/2, 0);
+}
+
+function simularExportacao() {
+    const aviso = document.getElementById('avisoPDF');
+    aviso.style.opacity = '1';
+    setTimeout(() => { aviso.style.opacity = '0'; }, 4000);
+}
+</script>
+
+</body>
+</html>
